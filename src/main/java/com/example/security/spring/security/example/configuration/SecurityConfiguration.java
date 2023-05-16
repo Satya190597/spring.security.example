@@ -4,7 +4,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,7 +18,13 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(requests -> {
             // + All the endpoints should be protected.
-            requests.anyRequest().authenticated();
+            requests.requestMatchers("/user")
+                    .hasAnyRole("USER","ADMIN")
+                    .requestMatchers("/admin")
+                    .hasAnyRole("ADMIN")
+                    .requestMatchers("/home")
+                    .permitAll()
+                    .anyRequest().authenticated();
         }).formLogin(form -> {
             // + Permit everyone to view the login page.
             form.permitAll();
@@ -32,11 +37,17 @@ public class SecurityConfiguration {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        UserDetails user = User.withDefaultPasswordEncoder()
+        User.UserBuilder users = User.withDefaultPasswordEncoder();
+        UserDetails user = users
                 .username("user")
                 .password("password")
                 .roles("USER")
                 .build();
-        return new InMemoryUserDetailsManager(user);
+        UserDetails admin = users
+                .username("admin")
+                .password("admin_password")
+                .roles("USER","ADMIN")
+                .build();
+        return new InMemoryUserDetailsManager(user,admin);
     }
 }
